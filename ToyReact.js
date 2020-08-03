@@ -63,11 +63,10 @@ export let ToyReact = {
                 if (typeof child === "object" && child instanceof Array) {
                     insertChildren(child)
                 } else {
-                    
                     if (!(child instanceof Component)
                         && !(child instanceof ElementWrapper)
                         && !(child instanceof TextWrapper)
-                    ){
+                    ) {
                         child = String(child)
                     }
                     if (typeof child === "string") {
