@@ -3,7 +3,11 @@ import {Component, ToyReact} from "./ToyReact"
 class MyComponent extends Component {
     render() {
         return <div>
-            <span>hello</span> <span>World!</span>
+            <span>hello</span>
+            <span>World!</span>
+            <div>
+                {this.children}
+            </div>
         </div>
     }
 
