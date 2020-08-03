@@ -63,8 +63,8 @@ export let ToyReact = {
                 if (typeof child === "object" && child instanceof Array) {
                     insertChildren(child)
                 } else {
-                    if (!children instanceof Component){
-                        child = child.toString()
+                    if (!(children instanceof Component)){
+                        child = String(child)
                     }
                     if (typeof child === "string") {
                         child = new TextWrapper(child)
