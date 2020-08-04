@@ -14,7 +14,7 @@ class ElementWrapper {
         //     name = "class"
         // }
         // this.root.setAttribute(name, value)
-        this.props[name] =  value
+        this.props[name] = value
     }
 
     appendChild(vchild) {
@@ -31,9 +31,10 @@ class ElementWrapper {
     }
 
     mountTo(range) {
+        this.range = range
         range.deleteContents()
         let element = document.createElement(this.type)
-        for (let name in this.props){
+        for (let name in this.props) {
             let value = this.props[name]
             element.setAttribute(name, value)
             if (name.match(/^on([\s\S]+)$/)) {
@@ -46,7 +47,7 @@ class ElementWrapper {
             element.setAttribute(name, value)
         }
 
-        for (let child of this.children){
+        for (let child of this.children) {
             let range = document.createRange()
             if (element.children.length) {
                 range.setStartAfter(element.lastChild)
@@ -65,9 +66,13 @@ class ElementWrapper {
 class TextWrapper {
     constructor(content) {
         this.root = document.createTextNode(content)
+        this.type = "#text"
+        this.children = []
+        this.props = Object.create(null)
     }
 
     mountTo(range) {
+        this.range = range
         range.deleteContents()
         range.insertNode(this.root)
     }
@@ -77,6 +82,10 @@ export class Component {
     constructor() {
         this.children = []
         this.props = Object.create(null)
+    }
+
+    get type() {
+        return this.constructor.name
     }
 
     setAttribute(name, value) {
@@ -93,15 +102,63 @@ export class Component {
     }
 
     update() {
-        let placeholder = document.createComment("placeholder")
-        let range = document.createRange()
-        range.setStart(this.range.endContainer, this.range.endOffset)
-        range.setEnd(this.range.endContainer, this.range.endOffset)
-        range.insertNode(placeholder)
 
-        this.range.deleteContents()
         let vdom = this.render()
-        vdom.mountTo(this.range)
+        if (this.vdom) {
+            let isSameNode = (node1, node2) => {
+                if (node1.type !== node2.type) {
+                    return false
+                }
+                for (let name in node1.props) {
+                    if (node1.props[name] !== node2.props[name]) {
+                        return false
+                    }
+                }
+                if (Object.keys(node1.props).length !== Object.keys(node2.props).length) {
+                    return false
+                }
+                return true
+            }
+
+            let isSameTree = (node1, node2) => {
+                if (!isSameNode(node1, node2)) {
+                    return false
+                }
+
+                if (node1.children.length !== node2.children.length) {
+                    return false
+                }
+
+                for (let i = 0; i < node1.children.length; i++) {
+                    if (!isSameTree(node1.children[i], node2.children[i])) {
+                        return false
+                    }
+                }
+                return true
+            }
+
+            let replace = (newTree, oldTree) => {
+
+                if (isSameTree(newTree, oldTree)) {
+                    return
+                }
+
+                if (!isSameNode(newTree, oldTree)) {
+                    newTree.mountTo(oldTree.range)
+                } else {
+                    for (let i = 0; i < newTree.children.length; i++) {
+                        replace(newTree.children[i], oldTree.children[i])
+                    }
+                }
+            }
+
+            replace(vdom, this.vdom)
+
+        } else {
+            vdom.mountTo(this.range)
+        }
+        this.vdom = vdom
+
 
         // placeholder.parentNode.removeChild(placeholder)
     }
