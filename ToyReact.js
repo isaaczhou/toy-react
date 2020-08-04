@@ -8,6 +8,9 @@ class ElementWrapper {
             let eventName = RegExp.$1.replace(/^[\s\S]/, (s) => s.toLowerCase())
             this.root.addEventListener(eventName, value)
         }
+        if (name === "className") {
+            name = "class"
+        }
         this.root.setAttribute(name, value)
     }
 
@@ -37,7 +40,9 @@ export class Component {
     }
 
     setAttribute(name, value) {
-
+        if (name.match(/^on([\s\S]+)$/)) {
+            console.log(RegExp.$1)
+        }
         this.props[name] = value
         this[name] = value
     }
