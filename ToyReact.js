@@ -1,8 +1,14 @@
+let childrenSymbol = Symbol("children")
 class ElementWrapper {
     constructor(type) {
         this.type = type
         this.props = Object.create(null)
+        this[childrenSymbol] = []
         this.children = []
+    }
+
+    get vdom() {
+        return this
     }
 
     setAttribute(name, value) {
@@ -17,8 +23,10 @@ class ElementWrapper {
         this.props[name] = value
     }
 
+
     appendChild(vchild) {
-        this.children.push(vchild)
+        this[childrenSymbol].push(vchild)
+        this.children.push(vchild.vdom)
         // let range = document.createRange()
         // if (this.root.children.length) {
         //     range.setStartAfter(this.root.lastChild)
@@ -32,6 +40,12 @@ class ElementWrapper {
 
     mountTo(range) {
         this.range = range
+        let placeholder = document.createComment("placeholder")
+        let endRange = document.createRange()
+        endRange.setStart(range.startContainer, range.endOffset)
+        endRange.setEnd(range.endContainer, range.endOffset)
+        endRange.insertNode(placeholder)
+
         range.deleteContents()
         let element = document.createElement(this.type)
         for (let name in this.props) {
@@ -71,6 +85,10 @@ class TextWrapper {
         this.props = Object.create(null)
     }
 
+    get vdom() {
+        return this
+    }
+
     mountTo(range) {
         this.range = range
         range.deleteContents()
@@ -88,6 +106,10 @@ export class Component {
         return this.constructor.name
     }
 
+    get vdom() {
+        return this.render().vdom
+    }
+
     setAttribute(name, value) {
         if (name.match(/^on([\s\S]+)$/)) {
             console.log(RegExp.$1)
@@ -103,19 +125,19 @@ export class Component {
 
     update() {
 
-        let vdom = this.render()
-        if (this.vdom) {
+        let vdom = this.vdom
+        if (this.oldVdom) {
             let isSameNode = (node1, node2) => {
                 if (node1.type !== node2.type) {
                     return false
                 }
                 for (let name in node1.props) {
-                    if (typeof node1.props[name] === "function"
-                        && typeof node2.props[name] === "function"
-                        && node1.props[name].toString() === node2.props[name].toString()
-                    ) {
-                        continue
-                    }
+                    // if (typeof node1.props[name] === "function"
+                    //     && typeof node2.props[name] === "function"
+                    //     && node1.props[name].toString() === node2.props[name].toString()
+                    // ) {
+                    //     continue
+                    // }
                     if (typeof node1.props[name] === "object"
                         && typeof node2.props[name] === "object"
                         && JSON.stringify(node1.props[name]) === JSON.stringify(node2.props[name])
@@ -164,12 +186,12 @@ export class Component {
                 }
             }
 
-            replace(vdom, this.vdom)
+            replace(vdom, this.oldVdom)
 
         } else {
             vdom.mountTo(this.range)
         }
-        this.vdom = vdom
+        this.oldVdom = vdom
 
 
         // placeholder.parentNode.removeChild(placeholder)
